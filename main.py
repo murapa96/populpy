@@ -1,73 +1,47 @@
-import requests
-import os
 import argparse
-import csv
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 import logging
+import os
+import csv
+from datetime import datetime
+
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+from pytrends.request import TrendReq
 from dotenv import load_dotenv
+import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load variables from .env file
-load_dotenv()
 
-# Access the google_search_api_key variable
-google_search_api_key = os.environ.get('google_search_api_key')
-custom_search_engine_id = os.environ.get('custom_search_engine_id')
-google_trends_api_key = os.environ.get('google_trends_api_key')
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-q", "--query", help="Query to search on Google", required=True)
+    parser.add_argument("-c", "--country", help="Country to search in", default="es")
+    parser.add_argument("-w", "--wordcloud", help="Path to save the wordcloud image")
+    return parser.parse_args()
 
 
-def get_google_search_results(query, api_key, cx, country):
-    url = f"https://www.googleapis.com/customsearch/v1?q={query}&cx={cx}&key={api_key}&cr={country}"
-    response = requests.get(url)
+def get_google_related_searches(query, pytrends):
+    pytrends.build_payload(kw_list=[query], timeframe='today 5-y')
+    related_queries = pytrends.related_queries()
+    return related_queries.get(query, {}).get('top', {}).get('query', []).tolist()
 
-    if response.status_code == 200:
-        data = response.json()
-        items = data.get("items", [])
-        search_results = [(item["title"], item["link"]) for item in items]
-        return search_results
+
+def get_google_search_trends(query, pytrends):
+    pytrends.build_payload(kw_list=[query], timeframe='today 5-y')
+    trends_df = pytrends.interest_over_time()
+    if not trends_df.empty:
+        trend = trends_df[query].idxmax()
+        trend_popularity = trends_df[query].max()
+        return trend.strftime('%Y-%m-%d'), trend_popularity
     else:
-        logger.error(f"Error: {response.status_code}")
-        return []
+        return None, None
 
 
-def get_google_search_trends(query, api_key, country):
-    url = f"https://trends.googleapis.com/trends/api/dailytrends?hl=en-US&tz=240&geo={country}&ed={query}&ns=15"
-    response = requests.get(url)
-
-    if response.status_code == 200:
-        data = response.json()
-        trends = data.get("default", {}).get("trendingSearchesDays", [])
-        if trends:
-            trend = trends[0]["trendingSearches"][0]
-            return trend["title"]["query"], trend["formattedTraffic"]
-    else:
-        logger.error(f"Error: {response.status_code}")
-
-    return query, "N/A"
-
-
-def get_google_common_searches(query, api_key, cx, country):
-    url = f"https://www.googleapis.com/customsearch/v1?q={query}&cx={cx}&key={api_key}&cr={country}&num=10"
-    response = requests.get(url)
-
-    if response.status_code == 200:
-        data = response.json()
-        queries = data.get("queries", {}).get("nextPage", [])
-        if queries:
-            return [q["title"] for q in queries]
-    else:
-        logger.error(f"Error: {response.status_code}")
-
-    return []
-
-
-def create_wordcloud(common_searches, path):
-    text = " ".join(common_searches)
-    wordcloud = WordCloud(
-        width=800, height=800, background_color='white', min_font_size=10).generate(text)
+def create_wordcloud(related_searches, path):
+    text = " ".join(related_searches)
+    wordcloud = WordCloud(width=800, height=800, background_color='white', min_font_size=10).generate(text)
     plt.figure(figsize=(8, 8), facecolor=None)
     plt.imshow(wordcloud)
     plt.axis("off")
@@ -75,54 +49,49 @@ def create_wordcloud(common_searches, path):
     plt.savefig(path)
 
 
+def get_top_results_for_related_searches(query, pytrends, api_key, cx):
+    related_searches = get_google_related_searches(query, pytrends)[:5]
+    base_url = "https://www.googleapis.com/customsearch/v1"
+    results = {}
+    for search in related_searches:
+        response = requests.get(base_url, params={"key": api_key, "cx": cx, "q": search})
+        if response.status_code == 200:
+            items = response.json().get("items", [])[:5]
+            results[search] = [item["title"] for item in items]
+    return results
+
+
+def save_related_searches_to_csv(related_searches, filename):
+    with open(filename, mode='w', newline='', encoding='utf-8') as csv_file:
+        fieldnames = ['Related Search', 'Result 1', 'Result 2', 'Result 3', 'Result 4', 'Result 5']
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for search, results in related_searches.items():
+            row = {'Related Search': search}
+            for i, result in enumerate(results, 1):
+                row[f"Result {i}"] = result
+            writer.writerow(row)
+
+
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-q", "--query", help="Query to search on Google", required=True)
-    parser.add_argument("-c", "--country",
-                        help="Country to search in", default="Spain")
-    parser.add_argument("-w", "--wordcloud",
-                        help="Path to save the wordcloud image")
-    args = parser.parse_args()
-
-    parsed_query = args.query
-    parsed_country = args.country
-
-    search_results = get_google_search_results(
-        parsed_query, google_search_api_key, custom_search_engine_id, parsed_country)
-    trend_query, trend_popularity = get_google_search_trends(
-        parsed_query, google_trends_api_key, parsed_country)
-    common_searches = get_google_common_searches(
-        parsed_query, google_search_api_key, custom_search_engine_id, parsed_country)
-
+    args = parse_args()
+    load_dotenv()
+    pytrends = TrendReq()
+    related_searches_with_results = get_top_results_for_related_searches(
+        args.query, 
+        pytrends, 
+        os.getenv("google_search_api_key"), 
+        os.getenv("custom_search_engine_id")
+    )
+    save_related_searches_to_csv(related_searches_with_results, f"{args.query}_related_searches.csv")
+    logger.info(f"Related Searches and their top results for {args.query}:")
+    for search, results in related_searches_with_results.items():
+        logger.info(f"\n{search}:")
+        for result in results:
+            logger.info(f" - {result}")
     if args.wordcloud:
-        parsed_wordcloud_path = args.wordcloud
-        create_wordcloud(common_searches, parsed_wordcloud_path)
-
-    # Export search results, trend popularity and common searches to CSV
-    with open('results.csv', mode='w') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Search Results'])
-        for idx, result in enumerate(search_results, 1):
-            writer.writerow([f"{idx}. {result[0]} - {result[1]}"])
-        writer.writerow([''])
-        writer.writerow(['Trend Popularity'])
-        writer.writerow([f"{trend_query} - {trend_popularity}"])
-        writer.writerow([''])
-        writer.writerow(['Common Searches'])
-        for idx, search in enumerate(common_searches, 1):
-            writer.writerow([f"{idx}. {search}"])
-
-    logger.info("Resultados de búsqueda de Google:")
-    for idx, result in enumerate(search_results, 1):
-        logger.info(f"{idx}. {result[0]} - {result[1]}")
-
-    logger.info("\nPopularidad en Google Trends:")
-    logger.info(f"{trend_query} - {trend_popularity}")
-
-    logger.info("\nBúsquedas comunes en Google:")
-    for idx, search in enumerate(common_searches, 1):
-        logger.info(f"{idx}. {search}")
+        related_searches = list(related_searches_with_results.keys())
+        create_wordcloud(related_searches, args.wordcloud)
 
 
 if __name__ == "__main__":
