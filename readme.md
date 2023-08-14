@@ -1,54 +1,77 @@
 # Populpy
 
-This is a Python script that allows you to search Google and get the search results, trend popularity, and common searches for a given query.
+This script allows users to fetch related searches for a given query from Google Trends, and for each related search, it retrieves the date it was most popular and its popularity score. Additionally, it has the capability to generate a word cloud based on these related searches and fetches top search results for them using the Google Custom Search API.
 
-## Installation
+## Setup
 
-1. Clone the repository:
+### Prerequisites
 
-   ```
-   git clone https://github.com/murapa96/google-search-tool.git
-   ```
+1. Python 3.x
+2. A Google Cloud account with access to the Custom Search API
+3. A configured Custom Search Engine
 
-2. Install the required packages:
+### Installation
 
-   ```
-   pip install -r requirements.txt
-   ```
+1. Clone this repository:
 
-3. Set up the environment variables:
+```bash
+git clone https://github.com/murapa96/populpy
+cd populpy
+```
 
-   - `google_search_api_key`: Your Google Custom Search API key
-   - `custom_search_engine_id`: Your Google Custom Search Engine ID
-   - `google_trends_api_key`: Your Google Trends API key
+2. Install the required Python packages:
 
-4. Run the script:
+```bash
+pip install -r requirements.txt
+```
 
-   ```
-   python main.py -q "query" -c "country"
-   ```
+### `.env` Configuration
 
-   Replace "query" with your search query and "country" with the country you want to search in (default is "Spain").
+You need to create a `.env` file in the root directory of the project with the following structure:
 
-   You can also add the `-w` or `--wordcloud` option to generate a wordcloud with the most common searches:
+```env
+google_search_api_key=YOUR_GOOGLE_SEARCH_API_KEY
+custom_search_engine_id=YOUR_CUSTOM_SEARCH_ENGINE_ID
+```
 
-   ```
-   python main.py -q "query" -c "country" -w "wordcloud.png"
-   ```
+Replace `YOUR_GOOGLE_SEARCH_API_KEY` with your Google Search API key and `YOUR_CUSTOM_SEARCH_ENGINE_ID` with your Custom Search Engine ID.
+You can edit *example.env* and rename it to *.env*
 
-   Replace "wordcloud.png" with the path where you want to save the wordcloud image.
 
 ## Usage
 
-The script takes two command-line arguments:
+### Basic Usage
 
-- `-q` or `--query`: The query to search on Google
-- `-c` or `--country`: The country to search in (default is "Spain")
-- `-w` or `--wordcloud`: The path to save the wordcloud image (optional)
+To run the script with a query:
 
-The script will output the search results, trend popularity, and common searches to the console, and also export them to a CSV file named `results.csv`.
+```bash
+python main.py -q "YOUR_QUERY"
+```
+
+Replace `YOUR_QUERY` with the query you want to analyze.
+
+### Additional Options
+
+- To specify a country for the search:
+
+```bash
+python main.py -q "YOUR_QUERY" -c "COUNTRY_CODE"
+```
+
+Replace `COUNTRY_CODE` with the desired country's code (e.g., `us` for the United States, `es` for Spain).
+
+- To generate a word cloud for the related searches:
+
+```bash
+python main.py -q "YOUR_QUERY" -w "PATH_TO_SAVE_IMAGE"
+```
+
+Replace `PATH_TO_SAVE_IMAGE` with the path where you'd like to save the generated word cloud image.
+
+## Contributing
+
+If you'd like to contribute, please fork the repository and make changes as you'd like. Pull requests are warmly welcome.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
+This project is open-sourced software licensed under the MIT license.
