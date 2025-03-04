@@ -39,8 +39,8 @@ if __name__ == "__main__":
         related_searches_with_results = get_top_results_for_related_searches(
             args.query, 
             pytrends, 
-            os.getenv("google_search_api_key"), 
-            os.getenv("custom_search_engine_id")
+            os.getenv("GOOGLE_API_KEY"), 
+            os.getenv("SEARCH_ENGINE_ID")
         )
         
         save_related_searches_to_csv(related_searches_with_results, f"{args.query}_related_searches.csv")

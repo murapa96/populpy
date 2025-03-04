@@ -1,10 +1,28 @@
-import requests
-from duckduckgo_search import ddg
+from abc import ABC, abstractmethod
 from typing import List, Dict
+import requests
+import logging
+from duckduckgo_search import DDGS
 
-class SearchProvider:
+logger = logging.getLogger(__name__)
+
+class SearchResult:
+    def __init__(self, title: str, link: str):
+        self.title = title
+        self.link = link
+
+    def to_dict(self) -> Dict:
+        return {'title': self.title, 'link': self.link}
+
+class SearchProvider(ABC):
+    @abstractmethod
     def search(self, query: str, num_results: int = 5) -> List[Dict]:
-        raise NotImplementedError
+        pass
+
+class SearchProviderFactory(ABC):
+    @abstractmethod
+    def create_provider(self, **kwargs) -> SearchProvider:
+        pass
 
 class GoogleSearchProvider(SearchProvider):
     def __init__(self, api_key: str, cx: str):
@@ -19,16 +37,27 @@ class GoogleSearchProvider(SearchProvider):
             'q': query,
             'num': num_results
         }
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            items = response.json().get('items', [])
-            return [{'title': item['title'], 'link': item['link']} for item in items]
-        return []
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            if response.status_code == 200:
+                items = response.json().get('items', [])
+                return [SearchResult(item['title'], item['link']).to_dict() for item in items]
+            return []
+        except Exception as e:
+            logger.error(f"Error in GoogleSearchProvider: {str(e)}")
+            return []
 
-class DuckDuckGoProvider(SearchProvider):
+class DuckDuckGoSearchProvider(SearchProvider):
     def search(self, query: str, num_results: int = 5) -> List[Dict]:
-        results = ddg(query, max_results=num_results)
-        return [{'title': r['title'], 'link': r['link']} for r in results]
+        """Search using DuckDuckGo"""
+        try:
+            ddgs = DDGS()
+            results = list(ddgs.text(query, max_results=num_results))
+            return [SearchResult(r['title'], r['href']).to_dict() for r in results]
+        except Exception as e:
+            logger.error(f"Error in DuckDuckGoSearchProvider: {str(e)}")
+            return []
 
 class BingSearchProvider(SearchProvider):
     def __init__(self, api_key: str):
@@ -37,8 +66,39 @@ class BingSearchProvider(SearchProvider):
     def search(self, query: str, num_results: int = 5) -> List[Dict]:
         headers = {'Ocp-Apim-Subscription-Key': self.api_key}
         url = f"https://api.bing.microsoft.com/v7.0/search?q={query}&count={num_results}"
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            items = response.json().get('webPages', {}).get('value', [])
-            return [{'title': item['name'], 'link': item['url']} for item in items]
-        return []
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            if response.status_code == 200:
+                items = response.json().get('webPages', {}).get('value', [])
+                return [SearchResult(item['name'], item['url']).to_dict() for item in items]
+            return []
+        except Exception as e:
+            logger.error(f"Error in BingSearchProvider: {str(e)}")
+            return []
+
+class GoogleSearchProviderFactory(SearchProviderFactory):
+    def create_provider(self, **kwargs) -> SearchProvider:
+        api_key = kwargs.get('api_key')
+        cx = kwargs.get('cx')
+        if not api_key or not cx:
+            raise ValueError("API key and CX are required for Google Search")
+        return GoogleSearchProvider(api_key, cx)
+
+class DuckDuckGoSearchProviderFactory(SearchProviderFactory):
+    def create_provider(self, **kwargs) -> SearchProvider:
+        return DuckDuckGoSearchProvider()
+
+class BingSearchProviderFactory(SearchProviderFactory):
+    def create_provider(self, **kwargs) -> SearchProvider:
+        api_key = kwargs.get('api_key')
+        if not api_key:
+            raise ValueError("API key is required for Bing Search")
+        return BingSearchProvider(api_key)
+
+# Factory registry
+PROVIDER_FACTORIES = {
+    'Google': GoogleSearchProviderFactory(),
+    'DuckDuckGo': DuckDuckGoSearchProviderFactory(),
+    'Bing': BingSearchProviderFactory()
+}

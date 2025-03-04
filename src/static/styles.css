@@ -1,0 +1,95 @@
+/* Estilos generales */
+.main-title {
+    background: linear-gradient(120deg, var(--populpy-gradient-start), var(--populpy-gradient-end));
+    padding: 1rem;
+    border-radius: 10px;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px var(--populpy-box-shadow-color);
+}
+
+/* Tarjetas de resultados */
+.search-result-card {
+    background: var(--populpy-background-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border-left: 4px solid var(--populpy-card-border-color);
+    transition: transform 0.2s ease;
+    box-shadow: 0 2px 4px var(--populpy-box-shadow-color);
+}
+
+.search-result-card:hover {
+    transform: translateX(5px);
+}
+
+/* Animaciones de carga */
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid var(--populpy-spinner-border-color);
+    border-top: 5px solid var(--populpy-spinner-border-top-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+    display: block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Pestañas personalizadas */
+.custom-tabs {
+    background: var(--populpy-background-color);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--populpy-box-shadow-color);
+}
+
+/* Sidebar mejorado */
+.sidebar-search-item {
+    background: var(--populpy-secondary-background);
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-search-item:hover {
+    background: var(--populpy-hover-background);
+}
+
+/* Gráficos y visualizaciones */
+.chart-container {
+    background: var(--populpy-background-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    box-shadow: 0 2px 4px var(--populpy-box-shadow-color);
+}
+
+/* Botones personalizados */
+.custom-button {
+    background: linear-gradient(120deg, var(--populpy-gradient-start), var(--populpy-gradient-end));
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.custom-button:hover {
+    transform: scale(1.05);
+}
+
+body {
+    color: var(--populpy-text-color);
+    background-color: var(--populpy-background-color);
+}
+
+a {
+    color: var(--populpy-link-color);
+}

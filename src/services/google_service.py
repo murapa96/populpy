@@ -10,9 +10,29 @@ def get_google_related_searches(query, pytrends):
         return [item['query'] for item in related_queries[query]['top'].to_dict('records')]
     return []
 
-def get_google_search_trends(query, pytrends):
-    pytrends.build_payload([query])
-    return pytrends.interest_over_time()
+def get_google_search_trends(query: str, pytrends) -> dict:
+    """
+    Get Google Trends data for a search query
+    """
+    try:
+        # Build the payload
+        pytrends.build_payload([query])
+        
+        # Get interest over time
+        interest_over_time_df = pytrends.interest_over_time()
+        
+        if interest_over_time_df.empty:
+            return {'dates': [], 'values': []}
+            
+        # Convert datetime index to strings and values to lists
+        return {
+            'dates': interest_over_time_df.index.astype(str).tolist(),
+            'values': interest_over_time_df[query].tolist()
+        }
+        
+    except Exception as e:
+        print(f"Error getting trends data: {str(e)}")
+        return {'dates': [], 'values': []}
 
 def create_wordcloud(related_searches, path, background_color='white', colormap='viridis'):
     text = ' '.join(related_searches)
