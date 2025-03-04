@@ -1,21 +1,30 @@
 #!/usr/bin/env python3
 """
-Entry point for the PopulPy Streamlit application.
-This file serves as the entry point that users should run with 'streamlit run app.py'
+PopulPy - Entry point for Streamlit application
+
+This file serves as the main entry point to run the Streamlit application.
+It ensures that Python can correctly import modules from the project.
 """
 import os
 import sys
-from dotenv import load_dotenv
+import subprocess
 
-# Make sure the current directory is in the path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+def main():
+    """
+    Run the Streamlit application with the correct Python path configuration
+    """
+    # Get absolute path to the project root directory
+    project_root = os.path.abspath(os.path.dirname(__file__))
+    
+    # Get path to the actual Streamlit app
+    streamlit_app_path = os.path.join(project_root, "src", "ui", "streamlit_app.py")
+    
+    # Set PYTHONPATH environment variable to include the project root
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{project_root}:{env.get('PYTHONPATH', '')}"
+    
+    # Run the Streamlit app with proper environment
+    subprocess.run(["streamlit", "run", streamlit_app_path], env=env)
 
-# Load environment variables
-load_dotenv()
-
-# Import and run the main UI
-from src.ui.streamlit_app import main
-
-# This will be executed when Streamlit runs this file
 if __name__ == "__main__":
     main()

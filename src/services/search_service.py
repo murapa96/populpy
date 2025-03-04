@@ -57,44 +57,36 @@ class SearchService:
                     cx = config.get('cx')
                     if not api_key or not cx:
                         logger.warning("Missing Google API key or search engine ID")
-                        raise ConfigurationError("Google API key and search engine ID are required")
+                        results[provider] = []
+                        continue
                         
-                    google_provider = GoogleSearchProvider(api_key=api_key, cx=cx)
-                    results['Google'] = google_provider.search(query)
-                
+                    # Create provider and perform search
+                    google_provider = GoogleSearchProvider(api_key, cx)
+                    results[provider] = google_provider.search(query)
+                    
                 elif provider == 'DuckDuckGo':
-                    duckduckgo_provider = DuckDuckGoSearchProvider()
-                    results['DuckDuckGo'] = duckduckgo_provider.search(query)
-                
+                    # DuckDuckGo doesn't require API keys
+                    ddg_provider = DuckDuckGoSearchProvider()
+                    results[provider] = ddg_provider.search(query)
+                    
                 elif provider == 'Bing':
                     # Validate Bing configuration
                     bing_api_key = config.get('bing_api_key')
                     if not bing_api_key:
                         logger.warning("Missing Bing API key")
-                        raise ConfigurationError("Bing API key is required")
+                        results[provider] = []
+                        continue
                         
-                    bing_provider = BingSearchProvider(api_key=bing_api_key)
-                    results['Bing'] = bing_provider.search(query)
-                
+                    # Create provider and perform search
+                    bing_provider = BingSearchProvider(bing_api_key)
+                    results[provider] = bing_provider.search(query)
+                    
                 else:
-                    logger.warning(f"Unknown search provider: {provider}")
+                    logger.warning(f"Unsupported provider: {provider}")
                     results[provider] = []
-            
-            except ConfigurationError as e:
-                logger.error(f"Configuration error with {provider}: {str(e)}")
-                results[provider] = []
-            
-            except requests.RequestException as e:
-                logger.error(f"Network error with {provider}: {str(e)}")
-                results[provider] = []
-                
-            except SearchAPIError as e:
-                logger.error(f"API error with {provider}: {str(e)}")
-                results[provider] = []
-                
+                    
             except Exception as e:
-                # Still catch general exceptions as fallback
-                logger.error(f"Unexpected error with {provider}: {str(e)}", exc_info=True)
+                logger.error(f"Error searching with provider {provider}: {str(e)}")
                 results[provider] = []
         
         return results
