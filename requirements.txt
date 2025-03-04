@@ -8,7 +8,7 @@ kiwisolver
 matplotlib
 numpy
 packaging
-Pillow==9.5.0
+Pillow==10.3.0
 pyparsing
 python-dateutil
 python-dotenv
