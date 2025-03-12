@@ -5,6 +5,7 @@
 [![Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://streamlit.io)
 
 Herramienta de análisis de tendencias de búsqueda con integración de múltiples motores (Google, Bing, DuckDuckGo) y visualizaciones interactivas.
+![populpy](https://github.com/user-attachments/assets/2a8db5bc-6efc-4e93-a86b-fe590d4542ba)
 
 ## 🚀 Características
 
